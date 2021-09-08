@@ -1,0 +1,91 @@
+1st - login to server
+2nd - lampstack server dir /opt/lampstack/apache2
+3rd - go to cd conf
+4th - edit httpd.conf
+5th - Include the following line in include_ssl module 
+
+:  Include conf/extra/httpd-ssl.conf
+
+and include Listen 443 port to enable https connection
+
+6th - go to extra folder in the same directory and edit httpd-ssl.conf
+
+:<VirtualHost _default_:443>
+DocumentRoot "/opt/lampstack/apache2/htdocs"
+SSLEngine on
+SSLCertificateFile "/opt/lampstack/apache2/conf/server.crt"
+SSLCertificateKeyFile "/opt/lampstack/apache2/conf/server.key"
+RewriteEngine On
+    RewriteCond %{REQUEST_SCHEME} =http
+    RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+DocumentRoot "/opt/nms/icinga"
+<Directory "/opt/nms/icinga">
+   Options +FollowSymLinks
+   AllowOverride None
+   Order allow,deny
+   Allow from all
+   AuthName "ANMS_AUTH"
+   AuthType Basic
+   AuthUserFile /opt/nms/icinga/etc/htpasswd.users
+   Require valid-user
+   DirectoryIndex index.html index.php
+</Directory>
+
+<Directory /opt/nms/icinga/api/>
+        Order Deny,Allow
+        Allow from all
+        Satisfy any
+</Directory>
+
+<Directory "/opt/lampstack/apache2/htdocs">
+    Options Indexes FollowSymLinks
+    AllowOverride All
+    <IfVersion < 2.3 >
+      Order allow,deny
+      Allow from all
+    </IfVersion>
+    <IfVersion >= 2.3 >
+      Require all granted
+    </IfVersion>
+  </Directory>
+
+
+Include "/opt/lampstack/apache2/conf/configuration.conf"
+Include "/opt/lampstack/apache2/conf/dcrack.conf"
+Include "/opt/lampstack/apache2/conf/hawkeye.conf"
+Include "/opt/lampstack/apache2/conf/adminconsole.conf"
+Include "/opt/lampstack/apache2/conf/anms.conf"
+Include "/opt/lampstack/apache2/conf/mobile.conf"
+Include "/opt/lampstack/apache2/conf/portal.conf"
+Include "/opt/lampstack/apache2/conf/realgraph.conf"
+Include "/opt/lampstack/apache2/conf/supportterminal.conf"
+Include "/opt/lampstack/apache2/conf/syslog.conf"
+Include "/opt/lampstack/apache2/conf/testapi.conf"
+
+
+</VirtualHost>
+
+7th - Remeber to edit the server.crt file to create cert refer this link
+
+:https://www.digitalocean.com/community/tutorials/how-to-create-a-self-signed-ssl-certificate-for-apache-in-ubuntu-16-04
+
+8th - https has been enabled now to allow admin.php of console to load in php change 
+
+: /opt/nms/icinga/portal/application/controllers/
+  configuration.php
+  edit this line 
+  
+  $this->template->content = '<iframe src="'.Kohana::config('config.nacoma_path').'admin.php'.'" style="width: 100%; height: 768px;" frameborder="0" id="iframe"></iframe>';
+  
+  to revert this use line:
+  src="'.Kohana::config('config.nacoma_path').'/'.$target_link.
+  in above line
+  
+9th - to compile and restart the apache2 server 
+
+: /opt/lampstack
+./ctlscript.sh restart apache2
+using sudo permission
+
+
